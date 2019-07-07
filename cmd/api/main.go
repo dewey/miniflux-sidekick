@@ -1,15 +1,17 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
+	"time"
 
+	"github.com/dewey/miniflux-sidekick/filter"
+	"github.com/dewey/miniflux-sidekick/rules"
 	"github.com/go-chi/chi"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -24,7 +26,8 @@ func main() {
 		minifluxUsername    = fs.String("username", "dewey", "the username used to log into miniflux")
 		minifluxPassword    = fs.String("password", "changeme", "the password used to log into miniflux")
 		minifluxAPIEndpoint = fs.String("api-endpoint", "https://rss.notmyhostna.me", "the api of your miniflux instance")
-		killfilePath        = fs.String("killfile-path", "./killfile", "the path to the local killfile")
+		killfilePath        = fs.String("killfile-path", "", "the path to the local killfile")
+		killfileURL         = fs.String("killfile-url", "", "the url to the remote killfile eg. Github gist")
 		port                = fs.String("port", "8080", "the port the miniflux sidekick is running on")
 	)
 
@@ -58,19 +61,45 @@ func main() {
 		level.Error(l).Log("err", err)
 		return
 	}
-	level.Error(l).Log("msg", "user successfully logged in", "username", u.Username, "user_id", u.ID, "is_admin", u.IsAdmin)
+	level.Info(l).Log("msg", "user successfully logged in", "username", u.Username, "user_id", u.ID, "is_admin", u.IsAdmin)
 
-	// Fetch all feeds.
-	f, err := client.Feeds()
-	if err != nil {
-		level.Error(l).Log("err", err)
-		return
+	var t = &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 5 * time.Second,
+	}
+	var c = &http.Client{
+		Timeout:   time.Second * 10,
+		Transport: t,
 	}
 
 	// We parse our rules from disk or from an provided endpoint
-	var rs []Rule
+	var rs []rules.Rule
+	fmt.Println((*killfilePath))
 	if *killfilePath != "" {
-		parsedRules, err := parseLocalKillfile("./killfile")
+		level.Info(l).Log("msg", "using a local killfile", "path", *killfilePath)
+		localRepo, err := rules.NewLocalRepository()
+		if err != nil {
+			level.Error(l).Log("err", err)
+			return
+		}
+		parsedRules, err := localRepo.Rules(*killfilePath)
+		if err != nil {
+			level.Error(l).Log("err", err)
+			return
+		}
+		rs = parsedRules
+	}
+	// A local rule set always trumps a remote one
+	if *killfileURL != "" && *killfilePath == "" {
+		level.Info(l).Log("msg", "using a remote killfile")
+		githubRepo, err := rules.NewGithubRepository(c)
+		if err != nil {
+			level.Error(l).Log("err", err)
+			return
+		}
+		parsedRules, err := githubRepo.Rules(*killfileURL)
 		if err != nil {
 			level.Error(l).Log("err", err)
 			return
@@ -78,92 +107,10 @@ func main() {
 		rs = parsedRules
 	}
 
-	for _, feed := range f {
-		// Check if the feed matches one of our rules
-		var found bool
-		for _, rule := range rs {
-			if strings.Contains(feed.FeedURL, rule.URL) {
-				found = true
-			}
-		}
-		if !found {
-			continue
-		}
+	filterService := filter.NewService(l, client, rs)
 
-		// We then get all the unread entries of the feed that matches our rule
-		entries, err := client.FeedEntries(feed.ID, &miniflux.Filter{
-			Status: "unread",
-		})
-		if err != nil {
-			level.Error(l).Log("err", err)
-			continue
-		}
+	filterService.RunFilterJob(true)
 
-		// We then check if the entry title matches a rule, if it matches we set it to "read" so we don't see it any more
-		var matchedEntries []int64
-		for _, entry := range entries.Entries {
-			var found bool
-			for _, rule := range rs {
-				tokens := strings.Split(rule.FilterExpression, " ")
-				if len(tokens) == 3 {
-					// We set the string we want to compare against (https://newsboat.org/releases/2.15/docs/newsboat.html#_filter_language are supported in the killfile format)
-					var entryTarget string
-					switch tokens[0] {
-					case "title":
-						entryTarget = entry.Title
-					case "description":
-						entryTarget = entry.Content
-					}
-
-					// We check what kind of comparator was given
-					switch tokens[1] {
-					case "=~":
-						matched, err := regexp.MatchString(tokens[2], entryTarget)
-						if err != nil {
-							level.Error(l).Log("err", err)
-						}
-						if matched {
-							found = true
-						}
-					case "#":
-						var containsTerm bool
-						blacklistTokens := strings.Split(tokens[2], ",")
-						for _, t := range blacklistTokens {
-							if strings.Contains(entryTarget, t) {
-								containsTerm = true
-								break
-							}
-						}
-						if containsTerm {
-							found = true
-						}
-					}
-				}
-			}
-			if found {
-				level.Info(l).Log("msg", "entry matches rules in the killfile", "entry_id", entry.ID, "feed_id", feed.ID)
-				matchedEntries = append(matchedEntries, entry.ID)
-			}
-		}
-		switch *environment {
-		case "development", "develop":
-			for _, me := range matchedEntries {
-				e, err := client.Entry(me)
-				if err != nil {
-					level.Error(l).Log("err", err)
-					return
-				}
-				level.Info(l).Log("msg", "would set status to read", "entry_id", me, "entry_title", e.Title)
-			}
-		case "production", "prod":
-			if err := client.UpdateEntries(matchedEntries, "read"); err != nil {
-				level.Error(l).Log("msg", "error on updating the feed entries", "err", err)
-				return
-			}
-		}
-
-		level.Info(l).Log("msg", "marked all matched feed items as read", "affected", len(matchedEntries))
-	}
 	// Set up HTTP API
 	r := chi.NewRouter()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -178,37 +125,4 @@ func main() {
 		level.Error(l).Log("err", err)
 		return
 	}
-}
-
-// Rule contains a killfile rule. There's no official standard so we implement these rules https://newsboat.org/releases/2.15/docs/newsboat.html#_killfiles
-type Rule struct {
-	Command          string
-	URL              string
-	FilterExpression string
-}
-
-var (
-	reRuleSplitter = regexp.MustCompile(`(.+?)\s\"(.+?)\"\s\"(.+)\"`)
-)
-
-func parseLocalKillfile(path string) ([]Rule, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var rules []Rule
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		matches := reRuleSplitter.FindStringSubmatch(scanner.Text())
-		if len(matches) == 4 {
-			rules = append(rules, Rule{
-				Command:          matches[1],
-				URL:              matches[2],
-				FilterExpression: matches[3],
-			})
-		}
-	}
-	return rules, scanner.Err()
 }
