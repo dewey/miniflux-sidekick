@@ -4,6 +4,12 @@ This is a sidekick container that runs alongside [Miniflux](https://miniflux.app
 
 The goal is to support so called [Killfiles](https://en.wikipedia.org/wiki/Kill_file) to filter out items you don't want to see. You can think of it as an ad-blocker for your feed reader. The items are not deleted, they are just marked as *read* so you can still find all items in your feed reader if you have to.
 
+## Features
+
+- Supports a subset of so called UseNet killfiles rules
+- Supports remote killfile (Share one killfile with other people, similar to ad-blocking lists)
+- Supports local killfiles on disk
+
 ## Supported Rules
 
 The general format of the `killfile` is:
