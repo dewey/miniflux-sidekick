@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/dewey/miniflux-sidekick/filter"
@@ -76,7 +77,6 @@ func main() {
 
 	// We parse our rules from disk or from an provided endpoint
 	var rs []rules.Rule
-	fmt.Println((*killfilePath))
 	if *killfilePath != "" {
 		level.Info(l).Log("msg", "using a local killfile", "path", *killfilePath)
 		localRepo, err := rules.NewLocalRepository()
@@ -113,14 +113,41 @@ func main() {
 
 	// Set up HTTP API
 	r := chi.NewRouter()
+
+	tmpl, err := template.New("rules").Parse(`<html>
+	<head>
+		<title>miniflux-sidekick</title>
+	</head>
+	<body>
+	<h1>Currently active rules</h1>
+	<table>
+	<tr>
+		<th>Command</th>
+		<th>URL</th>
+		<th>Filter Expression</th>
+	</tr>
+	{{range .}}
+		<td>{{ .Command }}</td>
+		<td>{{ .URL }}</td>
+		<td>{{ .FilterExpression }}</td>
+		</tr>
+	{{end}}
+	</table>
+	</body>
+	</html>`)
+	if err != nil {
+		level.Error(l).Log("err", err)
+		return
+	}
+
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("miniflux-sidekick"))
+		tmpl.Execute(w, rs)
 	})
 
 	level.Info(l).Log("msg", fmt.Sprintf("miniflux-sidekick api is running on :%s", *port), "environment", *environment)
 
 	// Set up webserver and and set max file limit to 50MB
-	err = http.ListenAndServe(fmt.Sprintf(":%s", *port), nil)
+	err = http.ListenAndServe(fmt.Sprintf(":%s", *port), r)
 	if err != nil {
 		level.Error(l).Log("err", err)
 		return
