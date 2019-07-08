@@ -17,6 +17,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/peterbourgon/ff"
+	"github.com/robfig/cron"
 	miniflux "miniflux.app/client"
 )
 
@@ -29,6 +30,7 @@ func main() {
 		minifluxAPIEndpoint = fs.String("api-endpoint", "https://rss.notmyhostna.me", "the api of your miniflux instance")
 		killfilePath        = fs.String("killfile-path", "", "the path to the local killfile")
 		killfileURL         = fs.String("killfile-url", "", "the url to the remote killfile eg. Github gist")
+		refreshInterval     = fs.String("refresh-interval", "", "the url to the remote killfile eg. Github gist")
 		port                = fs.String("port", "8080", "the port the miniflux sidekick is running on")
 	)
 
@@ -109,7 +111,13 @@ func main() {
 
 	filterService := filter.NewService(l, client, rs)
 
-	filterService.RunFilterJob(true)
+	cron := cron.New()
+	// Set a fallback, documented in README
+	if *refreshInterval == "" {
+		*refreshInterval = "0 30 * * * *"
+	}
+	cron.AddJob(*refreshInterval, filterService)
+	cron.Start()
 
 	// Set up HTTP API
 	r := chi.NewRouter()
@@ -118,7 +126,7 @@ func main() {
 	<head>
 		<title>miniflux-sidekick</title>
 	</head>
-	<body>
+	<body style="font-family: monospace;">
 	<h1>Currently active rules</h1>
 	<table>
 	<tr>

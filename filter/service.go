@@ -13,6 +13,7 @@ import (
 // Service is an interface for a filter service
 type Service interface {
 	RunFilterJob(simulation bool)
+	Run()
 }
 
 type service struct {
@@ -28,6 +29,10 @@ func NewService(l log.Logger, c *miniflux.Client, rules []rules.Rule) Service {
 		client: c,
 		l:      l,
 	}
+}
+
+func (s *service) Run() {
+	s.RunFilterJob(true)
 }
 
 func (s *service) RunFilterJob(simulation bool) {

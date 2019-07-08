@@ -45,7 +45,7 @@ ignore-article "https://xkcd.com/atom.xml" "title # Lunar,Moon"
 
 ## Deploy
 
-There are the environment variables that can be set. If you want to use a local file you can set `MF_KILLFILE_PATH="~/path/to/killfile"`. A local killfile always overwrites a remote one, even if the remote killfile URL is set (`MF_KILLFILE_URL`). `MF_USERNAME`, `MF_PASSWORD` and `MF_API_ENDPOINT` are your Miniflux credentials.
+There are the environment variables that can be set. If you want to use a local file you can set `MF_KILLFILE_PATH="~/path/to/killfile"`. A local killfile always overwrites a remote one, even if the remote killfile URL is set (`MF_KILLFILE_URL`). `MF_USERNAME`, `MF_PASSWORD` and `MF_API_ENDPOINT` are your Miniflux credentials. If `MF_REFRESH_INTERVAL` isn't set it's running on every 30 minutes of every hour (`0 30 * * * *`).
 
 ```
 export MF_ENVIRONMENT=development
@@ -54,6 +54,7 @@ export MF_USERNAME=dewey
 export MF_PASSWORD="changeme"
 export MF_API_ENDPOINT=https://rss.notmyhostna.me
 export MF_KILLFILE_URL=https://raw.githubusercontent.com/dewey/miniflux-sidekick/master/killfile
+export MF_REFRESH_INTERVAL="0 30 * * * *"
 ```
 
 There's also a Dockerfile and Docker Compose file included so you can easily run it via `docker-compose -f docker-compose.yml up -d`.
