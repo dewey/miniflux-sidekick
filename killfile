@@ -1,0 +1,2 @@
+ignore-article "https://www.example.com" "title =~ \[Sponsor\]"
+ignore-article "https://xkcd.com/atom.xml" "title # Lunar,Moon"
