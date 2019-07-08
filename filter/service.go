@@ -32,7 +32,7 @@ func NewService(l log.Logger, c *miniflux.Client, rules []rules.Rule) Service {
 }
 
 func (s *service) Run() {
-	s.RunFilterJob(true)
+	s.RunFilterJob(false)
 }
 
 func (s *service) RunFilterJob(simulation bool) {
