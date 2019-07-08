@@ -38,7 +38,7 @@ From the [available rule set](https://newsboat.org/releases/2.15/docs/newsboat.h
 
 
 
-## Example
+### Example
 
 Here's an example of what a `killfile` could look like with these rules. The first one marks all feed items as read that have a `[Sponsor]` string in the title. The second one filters out all feed items that have the word `Lunar` OR `moon` in there.
 
