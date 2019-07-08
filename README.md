@@ -41,3 +41,19 @@ Here's an example of what a `killfile` could look like with these rules. The fir
 ignore-article "https://www.example.com" "title =~ \[Sponsor\]"
 ignore-article "https://xkcd.com/atom.xml" "title # Lunar,Moon"
 ```
+
+
+## Deploy
+
+There are the environment variables that can be set. If you want to use a local file you can set `MF_KILLFILE_PATH="~/path/to/killfile"` and not set the `MF_KILLFILE_URL` variable. `MF_USERNAME`, `MF_PASSWORD` and `MF_API_ENDPOINT` are your Miniflux credentials.
+
+```
+export MF_ENVIRONMENT=development
+export MF_PORT=8181
+export MF_USERNAME=dewey
+export MF_PASSWORD="changeme"
+export MF_API_ENDPOINT=https://rss.notmyhostna.me
+export MF_KILLFILE_URL=https://raw.githubusercontent.com/dewey/miniflux-sidekick/master/killfile
+```
+
+There's also a Dockerfile and Docker Compose file included so you can easily run it via `docker-compose -f docker-compose.yml up -d`.
