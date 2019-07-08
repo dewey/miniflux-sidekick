@@ -45,7 +45,7 @@ ignore-article "https://xkcd.com/atom.xml" "title # Lunar,Moon"
 
 ## Deploy
 
-There are the environment variables that can be set. If you want to use a local file you can set `MF_KILLFILE_PATH="~/path/to/killfile"` and not set the `MF_KILLFILE_URL` variable. `MF_USERNAME`, `MF_PASSWORD` and `MF_API_ENDPOINT` are your Miniflux credentials.
+There are the environment variables that can be set. If you want to use a local file you can set `MF_KILLFILE_PATH="~/path/to/killfile"`. A local killfile always overwrites a remote one, even if the remote killfile URL is set (`MF_KILLFILE_URL`). `MF_USERNAME`, `MF_PASSWORD` and `MF_API_ENDPOINT` are your Miniflux credentials.
 
 ```
 export MF_ENVIRONMENT=development
