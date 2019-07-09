@@ -116,8 +116,15 @@ func main() {
 	if *refreshInterval == "" {
 		*refreshInterval = "0 30 * * * *"
 	}
-	cron.AddJob(*refreshInterval, filterService)
-	cron.Start()
+	switch strings.ToLower(*environment) {
+	case "development":
+		level.Info(l).Log("msg", "running filter job in simulation mode", "env", *environment)
+		filterService.RunFilterJob(true)
+	case "prod":
+		level.Info(l).Log("msg", "running filter job not in destructive mode", "env", *environment)
+		cron.AddJob(*refreshInterval, filterService)
+		cron.Start()
+	}
 
 	// Set up HTTP API
 	r := chi.NewRouter()
