@@ -20,7 +20,7 @@ ignore-article "<feed>" "<filterexpr>"
 
 ### `<feed>`
 
-This contains the URL of the feed that should be matched. It fuzzy matches the URL so if you only have one feed just use the base URL of the site. Example: `https://example.com` if the feed is on `https://example.com/rss/atom.xml`
+This contains the URL of the feed that should be matched. It fuzzy matches the URL so if you only have one feed just use the base URL of the site. Example: `https://example.com` if the feed is on `https://example.com/rss/atom.xml`. A wildcard selector of `*` is also supported instead of the URL.
 
 ### `<filterexpr>` Filter Expressions
 
