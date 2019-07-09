@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	reRuleSplitter = regexp.MustCompile(`(.+?)\s\"(.+?)\"\s\"(.+)\"`)
+	reRuleSplitter = regexp.MustCompile(`(.+?)\s\"?(.+?)\"?\s\"(.+)\"`)
 )
 
 // Repository defines the interface for the rules repository
