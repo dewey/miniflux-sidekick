@@ -46,6 +46,10 @@ func (s *service) RunFilterJob(simulation bool) {
 		// Check if the feed matches one of our rules
 		var found bool
 		for _, rule := range s.rules {
+			// Also support the wildcard selector
+			if rule.URL == "*" {
+				found = true
+			}
 			if strings.Contains(feed.FeedURL, rule.URL) {
 				found = true
 			}
