@@ -128,7 +128,8 @@ func (s *service) RunFilterJob(simulation bool) {
 				return
 			}
 		}
-
-		level.Info(s.l).Log("msg", "marked all matched feed items as read", "affected", len(matchedEntries))
+		if len(matchedEntries) > 0 {
+			level.Info(s.l).Log("msg", "marked all matched feed items as read", "affected", len(matchedEntries))
+		}
 	}
 }

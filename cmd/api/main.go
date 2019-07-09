@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	fs := flag.NewFlagSet("mfs", flag.ExitOnError)
+	fs := flag.NewFlagSet("mf", flag.ExitOnError)
 	var (
 		environment         = fs.String("environment", "develop", "the environment we are running in")
 		minifluxUsername    = fs.String("username", "dewey", "the username used to log into miniflux")
