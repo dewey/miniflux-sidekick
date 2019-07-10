@@ -60,7 +60,7 @@ func (s *service) RunFilterJob(simulation bool) {
 
 		// We then get all the unread entries of the feed that matches our rule
 		entries, err := s.client.FeedEntries(feed.ID, &miniflux.Filter{
-			Status: "unread",
+			Status: miniflux.EntryStatusUnread,
 		})
 		if err != nil {
 			level.Error(s.l).Log("err", err)
@@ -123,8 +123,8 @@ func (s *service) RunFilterJob(simulation bool) {
 				level.Info(s.l).Log("msg", "would set status to read", "entry_id", me, "entry_title", e.Title)
 			}
 		} else {
-			if err := s.client.UpdateEntries(matchedEntries, "read"); err != nil {
-				level.Error(s.l).Log("msg", "error on updating the feed entries", "err", err)
+			if err := s.client.UpdateEntries(matchedEntries, miniflux.EntryStatusRead); err != nil {
+				level.Error(s.l).Log("msg", "error on updating the feed entries", "ids", matchedEntries, "err", err)
 				return
 			}
 		}
