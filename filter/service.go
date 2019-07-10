@@ -123,9 +123,12 @@ func (s *service) RunFilterJob(simulation bool) {
 				level.Info(s.l).Log("msg", "would set status to read", "entry_id", me, "entry_title", e.Title)
 			}
 		} else {
-			if err := s.client.UpdateEntries(matchedEntries, miniflux.EntryStatusRead); err != nil {
-				level.Error(s.l).Log("msg", "error on updating the feed entries", "ids", matchedEntries, "err", err)
-				return
+			for _, me := range matchedEntries {
+				level.Info(s.l).Log("msg", "set status to read", "entry_id", me)
+				if err := s.client.UpdateEntries([]int64{me}, miniflux.EntryStatusRead); err != nil {
+					level.Error(s.l).Log("msg", "error on updating the feed entries", "ids", me, "err", err)
+					return
+				}
 			}
 		}
 		if len(matchedEntries) > 0 {

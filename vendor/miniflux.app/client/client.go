@@ -423,10 +423,14 @@ func (c *Client) FeedEntries(feedID int64, filter *Filter) (*EntryResultSet, err
 
 // UpdateEntries updates the status of a list of entries.
 func (c *Client) UpdateEntries(entryIDs []int64, status string) error {
+	fmt.Println("Updated Entries")
 	type payload struct {
 		EntryIDs []int64 `json:"entry_ids"`
 		Status   string  `json:"status"`
 	}
+
+	fmt.Println("entryIDs", entryIDs)
+	fmt.Println("status", status)
 
 	body, err := c.request.Put("/v1/entries", &payload{EntryIDs: entryIDs, Status: status})
 	if err != nil {
