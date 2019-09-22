@@ -17,7 +17,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/peterbourgon/ff"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	miniflux "miniflux.app/client"
 )
 
@@ -114,7 +114,7 @@ func main() {
 	cron := cron.New()
 	// Set a fallback, documented in README
 	if *refreshInterval == "" {
-		*refreshInterval = "0 30 * * * *"
+		*refreshInterval = "30 * * * *"
 	}
 	switch strings.ToLower(*environment) {
 	case "development":

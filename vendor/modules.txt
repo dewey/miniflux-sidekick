@@ -9,7 +9,7 @@ github.com/go-logfmt/logfmt
 github.com/kr/logfmt
 # github.com/peterbourgon/ff v1.6.0
 github.com/peterbourgon/ff
-# github.com/robfig/cron v1.2.0
-github.com/robfig/cron
+# github.com/robfig/cron/v3 v3.0.0
+github.com/robfig/cron/v3
 # miniflux.app v0.0.0-20190922030442-afe1faf2141e
 miniflux.app/client
