@@ -7,9 +7,9 @@ github.com/go-kit/kit/log/level
 github.com/go-logfmt/logfmt
 # github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515
 github.com/kr/logfmt
-# github.com/peterbourgon/ff v1.2.0
+# github.com/peterbourgon/ff v1.6.0
 github.com/peterbourgon/ff
 # github.com/robfig/cron v1.2.0
 github.com/robfig/cron
-# miniflux.app v0.0.0-20190705173449-c84026867889
+# miniflux.app v0.0.0-20190922030442-afe1faf2141e
 miniflux.app/client
