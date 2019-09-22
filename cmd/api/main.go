@@ -47,9 +47,9 @@ func main() {
 	l := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	switch strings.ToLower(*environment) {
 	case "development":
-		l = level.NewFilter(l, level.AllowInfo())
+		l = level.NewFilter(l, level.AllowDebug())
 	case "prod":
-		l = level.NewFilter(l, level.AllowError())
+		l = level.NewFilter(l, level.AllowInfo())
 	}
 	l = log.With(l, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 
@@ -121,7 +121,7 @@ func main() {
 		level.Info(l).Log("msg", "running filter job in simulation mode", "env", *environment)
 		filterService.RunFilterJob(true)
 	case "prod":
-		level.Info(l).Log("msg", "running filter job not in destructive mode", "env", *environment)
+		level.Info(l).Log("msg", "running filter job in destructive mode", "env", *environment)
 		cron.AddJob(*refreshInterval, filterService)
 		cron.Start()
 	}
