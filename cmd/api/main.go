@@ -49,7 +49,7 @@ func main() {
 	case "development":
 		l = level.NewFilter(l, level.AllowDebug())
 	case "prod":
-		l = level.NewFilter(l, level.AllowInfo())
+		l = level.NewFilter(l, level.AllowError())
 	}
 	l = log.With(l, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 
@@ -114,16 +114,23 @@ func main() {
 	cron := cron.New()
 	// Set a fallback, documented in README
 	if *refreshInterval == "" {
-		*refreshInterval = "30 * * * *"
+		*refreshInterval = "*/5 * * * *"
+		level.Info(l).Log("msg", "set fallback interval as non provided", "env", *environment, "interval_cron", *refreshInterval)
 	}
 	switch strings.ToLower(*environment) {
 	case "development":
-		level.Info(l).Log("msg", "running filter job in simulation mode", "env", *environment)
+		level.Info(l).Log("msg", "running filter job in simulation mode", "env", *environment, "interval_cron", *refreshInterval)
 		filterService.RunFilterJob(true)
 	case "prod":
-		level.Info(l).Log("msg", "running filter job in destructive mode", "env", *environment)
-		cron.AddJob(*refreshInterval, filterService)
+		level.Info(l).Log("msg", "running filter job in destructive mode", "env", *environment, "interval_cron", *refreshInterval)
+		_, err := cron.AddJob(*refreshInterval, filterService)
+		if err != nil {
+			level.Error(l).Log("msg", "error adding cron job to scheduler", "err", err)
+		}
 		cron.Start()
+		for _, e := range cron.Entries() {
+			level.Info(l).Log("msg", "cron job entry scheduled", "id", e.ID, "next_execution", e.Next)
+		}
 	}
 
 	// Set up HTTP API
