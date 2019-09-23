@@ -1,6 +1,6 @@
 # Miniflux Sidekick
 
-This is a sidekick container that runs alongside [Miniflux](https://miniflux.app) which is an Open Source RSS feed reader written in Go. You can check out the source code on [Github](https://github.com/miniflux/miniflux).
+This is a sidekick container that runs alongside [Miniflux](https://miniflux.app) which is an Open Source RSS feed reader written in Go. You can check out the source code on [GitHub](https://github.com/miniflux/miniflux).
 
 The goal is to support so called [Killfiles](https://en.wikipedia.org/wiki/Kill_file) to filter out items you don't want to see. You can think of it as an ad-blocker for your feed reader. The items are not deleted, they are just marked as *read* so you can still find all items in your feed reader if you have to.
 
