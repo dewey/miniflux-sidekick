@@ -1,4 +1,4 @@
-IMAGE_NAME := tehwey/miniflux-sidekick
+IMAGE_NAME := dewey/miniflux-sidekick
 VERSION_DOCKER := $(shell git describe --abbrev=0 --tags  | sed 's/^v\(.*\)/\1/')
 
 all: install
@@ -10,17 +10,19 @@ test:
 	go test ./... -v
 
 image-push-staging:
-	docker build -t $(IMAGE_NAME):staging .
-	docker push $(IMAGE_NAME):staging
+	docker build -t docker.pkg.github.com/dewey/miniflux-sidekick/$(IMAGE_NAME):staging .
+	docker push docker.pkg.github.com/dewey/miniflux-sidekick/$(IMAGE_NAME):staging
 
 image-push:
-	docker build -t $(IMAGE_NAME):latest .
-	docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(VERSION_DOCKER)
-	docker push $(IMAGE_NAME):latest
-	docker push $(IMAGE_NAME):$(VERSION_DOCKER)
+	docker build -t docker.pkg.github.com/dewey/miniflux-sidekick/$(IMAGE_NAME):latest .
+	docker tag docker.pkg.github.com/dewey/miniflux-sidekick/$(IMAGE_NAME):latest docker.pkg.github.com/dewey/miniflux-sidekick/$(IMAGE_NAME):$(VERSION_DOCKER)
+	docker push docker.pkg.github.com/dewey/miniflux-sidekick/$(IMAGE_NAME):latest
+	docker push docker.pkg.github.com/dewey/miniflux-sidekick/$(IMAGE_NAME):$(VERSION_DOCKER)
 
 release:
 	git tag -a $(VERSION) -m "Release $(VERSION)" || true
 	git push origin $(VERSION)
 
 .PHONY: install test
+
+
