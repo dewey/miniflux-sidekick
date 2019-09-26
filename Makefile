@@ -1,4 +1,4 @@
-IMAGE_NAME := dewey/miniflux-sidekick
+IMAGE_NAME := dewey-miniflux-sidekick
 VERSION_DOCKER := $(shell git describe --abbrev=0 --tags  | sed 's/^v\(.*\)/\1/')
 
 all: install
