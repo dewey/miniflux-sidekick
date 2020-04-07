@@ -25,8 +25,8 @@ func main() {
 	fs := flag.NewFlagSet("mf", flag.ExitOnError)
 	var (
 		environment         = fs.String("environment", "develop", "the environment we are running in")
-		minifluxUsername    = fs.String("username", "dewey", "the username used to log into miniflux")
-		minifluxPassword    = fs.String("password", "changeme", "the password used to log into miniflux")
+		minifluxUsername    = fs.String("username", "", "the username used to log into miniflux")
+		minifluxPassword    = fs.String("password", "", "the password used to log into miniflux")
 		minifluxAPIKey      = fs.String("api-key", "", "api key used for authentication")
 		minifluxAPIEndpoint = fs.String("api-endpoint", "https://rss.notmyhostna.me", "the api of your miniflux instance")
 		killfilePath        = fs.String("killfile-path", "", "the path to the local killfile")
