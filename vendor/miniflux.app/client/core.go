@@ -48,7 +48,7 @@ type UserModification struct {
 // Users represents a list of users.
 type Users []User
 
-// Category represents a category in the system.
+// Category represents a feed category.
 type Category struct {
 	ID     int64  `json:"id,omitempty"`
 	Title  string `json:"title,omitempty"`
@@ -95,7 +95,6 @@ type Feed struct {
 	Username           string    `json:"username"`
 	Password           string    `json:"password"`
 	Category           *Category `json:"category,omitempty"`
-	Entries            Entries   `json:"entries,omitempty"`
 }
 
 // FeedModification represents changes for a feed.
@@ -134,10 +133,10 @@ type Entry struct {
 	Date       time.Time  `json:"published_at"`
 	Content    string     `json:"content"`
 	Author     string     `json:"author"`
+	ShareCode  string     `json:"share_code"`
 	Starred    bool       `json:"starred"`
 	Enclosures Enclosures `json:"enclosures,omitempty"`
 	Feed       *Feed      `json:"feed,omitempty"`
-	Category   *Category  `json:"category,omitempty"`
 }
 
 // Entries represents a list of entries.
@@ -169,6 +168,7 @@ type Filter struct {
 	BeforeEntryID int64
 	AfterEntryID  int64
 	Search        string
+	CategoryID    int64
 }
 
 // EntryResultSet represents the response when fetching entries.

@@ -25,8 +25,9 @@ func main() {
 	fs := flag.NewFlagSet("mf", flag.ExitOnError)
 	var (
 		environment         = fs.String("environment", "develop", "the environment we are running in")
-		minifluxUsername    = fs.String("username", "dewey", "the username used to log into miniflux")
-		minifluxPassword    = fs.String("password", "changeme", "the password used to log into miniflux")
+		minifluxUsername    = fs.String("username", "", "the username used to log into miniflux")
+		minifluxPassword    = fs.String("password", "", "the password used to log into miniflux")
+		minifluxAPIKey      = fs.String("api-key", "", "api key used for authentication")
 		minifluxAPIEndpoint = fs.String("api-endpoint", "https://rss.notmyhostna.me", "the api of your miniflux instance")
 		killfilePath        = fs.String("killfile-path", "", "the path to the local killfile")
 		killfileURL         = fs.String("killfile-url", "", "the url to the remote killfile eg. Github gist")
@@ -53,12 +54,15 @@ func main() {
 	}
 	l = log.With(l, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 
-	if *minifluxAPIEndpoint == "" || *minifluxUsername == "" || *minifluxPassword == "" {
-		level.Error(l).Log("err", errors.New("api endpoint, username and password need to be provided"))
+	var client *miniflux.Client
+	if *minifluxUsername != "" && *minifluxPassword != "" {
+		client = miniflux.New(*minifluxAPIEndpoint, *minifluxUsername, *minifluxPassword)
+	} else if *minifluxAPIKey != "" {
+		client = miniflux.New(*minifluxAPIEndpoint, *minifluxAPIKey)
+	} else {
+		level.Error(l).Log("err", errors.New("api endpoint, username and password or api key need to be provided"))
 		return
 	}
-
-	client := miniflux.New(*minifluxAPIEndpoint, *minifluxUsername, *minifluxPassword)
 	u, err := client.Me()
 	if err != nil {
 		level.Error(l).Log("err", err)
