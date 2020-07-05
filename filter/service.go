@@ -35,6 +35,8 @@ func (s *service) Run() {
 	s.RunFilterJob(false)
 }
 
+var filterEntryRegex = regexp.MustCompile(`(\w+?) (\S+?) (.+)`)
+
 func (s *service) RunFilterJob(simulation bool) {
 	// Fetch all feeds.
 	f, err := s.client.Feeds()
@@ -72,39 +74,41 @@ func (s *service) RunFilterJob(simulation bool) {
 		for _, entry := range entries.Entries {
 			var found bool
 			for _, rule := range s.rules {
-				tokens := strings.Split(rule.FilterExpression, " ")
-				if len(tokens) == 3 {
-					// We set the string we want to compare against (https://newsboat.org/releases/2.15/docs/newsboat.html#_filter_language are supported in the killfile format)
-					var entryTarget string
-					switch tokens[0] {
-					case "title":
-						entryTarget = entry.Title
-					case "description":
-						entryTarget = entry.Content
-					}
+				tokens := filterEntryRegex.FindStringSubmatch(rule.FilterExpression)
+				if tokens == nil || len(tokens) != 4 {
+					level.Error(s.l).Log("err", "invalid filter expression", "expression", rule.FilterExpression)
+					continue
+				}
+				// We set the string we want to compare against (https://newsboat.org/releases/2.15/docs/newsboat.html#_filter_language are supported in the killfile format)
+				var entryTarget string
+				switch tokens[1] {
+				case "title":
+					entryTarget = entry.Title
+				case "description":
+					entryTarget = entry.Content
+				}
 
-					// We check what kind of comparator was given
-					switch tokens[1] {
-					case "=~":
-						matched, err := regexp.MatchString(tokens[2], entryTarget)
-						if err != nil {
-							level.Error(s.l).Log("err", err)
+				// We check what kind of comparator was given
+				switch tokens[2] {
+				case "=~":
+					matched, err := regexp.MatchString(tokens[3], entryTarget)
+					if err != nil {
+						level.Error(s.l).Log("err", err)
+					}
+					if matched {
+						found = true
+					}
+				case "#":
+					var containsTerm bool
+					blacklistTokens := strings.Split(tokens[3], ",")
+					for _, t := range blacklistTokens {
+						if strings.Contains(entryTarget, t) {
+							containsTerm = true
+							break
 						}
-						if matched {
-							found = true
-						}
-					case "#":
-						var containsTerm bool
-						blacklistTokens := strings.Split(tokens[2], ",")
-						for _, t := range blacklistTokens {
-							if strings.Contains(entryTarget, t) {
-								containsTerm = true
-								break
-							}
-						}
-						if containsTerm {
-							found = true
-						}
+					}
+					if containsTerm {
+						found = true
 					}
 				}
 			}
