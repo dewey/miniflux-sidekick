@@ -33,6 +33,7 @@ func main() {
 		killfileURL         = fs.String("killfile-url", "", "the url to the remote killfile eg. Github gist")
 		refreshInterval     = fs.String("refresh-interval", "", "the url to the remote killfile eg. Github gist")
 		port                = fs.String("port", "8080", "the port the miniflux sidekick is running on")
+		logLevel            = fs.String("log-level", "", "the level to filter logs at eg. debug, info, warn, error")
 	)
 
 	ff.Parse(fs, os.Args[1:],
@@ -46,11 +47,22 @@ func main() {
 	}
 
 	l := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	switch strings.ToLower(*environment) {
-	case "development":
+	switch strings.ToLower(*logLevel) {
+	case "debug":
 		l = level.NewFilter(l, level.AllowDebug())
-	case "prod":
+	case "info":
+		l = level.NewFilter(l, level.AllowInfo())
+	case "warn":
+		l = level.NewFilter(l, level.AllowWarn())
+	case "error":
 		l = level.NewFilter(l, level.AllowError())
+	default:
+		switch strings.ToLower(*environment) {
+		case "development":
+			l = level.NewFilter(l, level.AllowDebug())
+		case "prod":
+			l = level.NewFilter(l, level.AllowError())
+		}
 	}
 	l = log.With(l, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 
