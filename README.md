@@ -34,7 +34,9 @@ From the [available rule set](https://newsboat.org/releases/2.15/docs/newsboat.h
 **Comparison Operators**
 
 - `=~`: test whether regular expression matches
+- `!~`: logical negation of the `=~` operator
 - `#`: contains; this operator matches if a word is contained in a list of space-separated words (useful for matching tags, see below)
+- `!#`: contains not; the negation of the `#` operator
 
 
 
