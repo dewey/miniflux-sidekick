@@ -72,7 +72,7 @@ func (s *service) RunFilterJob(simulation bool) {
 		// We then check if the entry title matches a rule, if it matches we set it to "read" so we don't see it any more
 		var matchedEntries []int64
 		for _, entry := range entries.Entries {
-			var found bool
+			var shouldKill bool
 			for _, rule := range s.rules {
 				tokens := filterEntryRegex.FindStringSubmatch(rule.FilterExpression)
 				if tokens == nil || len(tokens) != 4 {
@@ -90,15 +90,20 @@ func (s *service) RunFilterJob(simulation bool) {
 
 				// We check what kind of comparator was given
 				switch tokens[2] {
-				case "=~":
+				case "=~", "!~":
+					invertFilter := tokens[2][0] == '!'
+
 					matched, err := regexp.MatchString(tokens[3], entryTarget)
 					if err != nil {
 						level.Error(s.l).Log("err", err)
 					}
-					if matched {
-						found = true
+
+					if matched && !invertFilter || !matched && invertFilter {
+						shouldKill = true
 					}
-				case "#":
+				case "#", "!#":
+					invertFilter := tokens[2][0] == '!'
+
 					var containsTerm bool
 					blacklistTokens := strings.Split(tokens[3], ",")
 					for _, t := range blacklistTokens {
@@ -107,12 +112,12 @@ func (s *service) RunFilterJob(simulation bool) {
 							break
 						}
 					}
-					if containsTerm {
-						found = true
+					if containsTerm && !invertFilter || !containsTerm && invertFilter {
+						shouldKill = true
 					}
 				}
 			}
-			if found {
+			if shouldKill {
 				level.Info(s.l).Log("msg", "entry matches rules in the killfile", "entry_id", entry.ID, "feed_id", feed.ID)
 				matchedEntries = append(matchedEntries, entry.ID)
 			}
