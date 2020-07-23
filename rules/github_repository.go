@@ -3,10 +3,13 @@ package rules
 import (
 	"bufio"
 	"net/http"
+	"sync"
 )
 
 type githubRepository struct {
-	c *http.Client
+	c           *http.Client
+	mutex       sync.RWMutex
+	cachedRules []Rule
 }
 
 // NewGithubRepository returns a newly initialized Github.com repository
@@ -16,8 +19,16 @@ func NewGithubRepository(c *http.Client) (Repository, error) {
 	}, nil
 }
 
-// Rules parses a local killfile to get all rules
-func (r *githubRepository) Rules(location string) ([]Rule, error) {
+func (r *githubRepository) Rules() []Rule {
+	if r.cachedRules != nil {
+		return r.cachedRules
+	} else {
+		return []Rule{}
+	}
+}
+
+// FetchRules parses a remote killfile to get all rules
+func (r *githubRepository) FetchRules(location string) ([]Rule, error) {
 	resp, err := r.c.Get(location)
 	if err != nil {
 		return nil, err
@@ -37,4 +48,21 @@ func (r *githubRepository) Rules(location string) ([]Rule, error) {
 	}
 
 	return rules, scanner.Err()
+}
+
+// RefreshRules fetches the new rules and updates the local cache
+func (r *githubRepository) RefreshRules(location string) error {
+	rules, err := r.FetchRules(location)
+	if err != nil {
+		return err
+	}
+	r.SetCachedRules(rules)
+	return nil
+}
+
+// SetCachedRules sets the in-memory cache
+func (r *githubRepository) SetCachedRules(rules []Rule) {
+	r.mutex.Lock()
+	r.cachedRules = rules
+	r.mutex.Unlock()
 }

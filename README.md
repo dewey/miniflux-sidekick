@@ -75,6 +75,7 @@ export MF_PASSWORD="changeme"
 export MF_API_ENDPOINT=https://rss.notmyhostna.me
 export MF_KILLFILE_URL=https://raw.githubusercontent.com/dewey/miniflux-sidekick/master/killfile
 export MF_REFRESH_INTERVAL="0 30 * * * *"
+export MF_KILLFILE_REFRESH_HOURS=2
 ```
 
 There's also a Dockerfile and Docker Compose file included so you can easily run it via `docker-compose -f docker-compose.yml up -d`.

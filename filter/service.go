@@ -17,15 +17,15 @@ type Service interface {
 }
 
 type service struct {
-	rules  []rules.Rule
+	rulesRepository  rules.Repository
 	client *miniflux.Client
 	l      log.Logger
 }
 
 // NewService initializes a new filter service
-func NewService(l log.Logger, c *miniflux.Client, rules []rules.Rule) Service {
+func NewService(l log.Logger, c *miniflux.Client, rr rules.Repository) Service {
 	return &service{
-		rules:  rules,
+		rulesRepository:  rr,
 		client: c,
 		l:      l,
 	}
@@ -47,7 +47,7 @@ func (s *service) RunFilterJob(simulation bool) {
 	for _, feed := range f {
 		// Check if the feed matches one of our rules
 		var found bool
-		for _, rule := range s.rules {
+		for _, rule := range s.rulesRepository.Rules() {
 			// Also support the wildcard selector
 			if rule.URL == "*" {
 				found = true
@@ -104,7 +104,7 @@ func (s *service) RunFilterJob(simulation bool) {
 // evaluateRules checks a feed items against the available rules. It returns wheater this entry should be killed or not.
 func (s service) evaluateRules(entry *miniflux.Entry) bool {
 	var shouldKill bool
-	for _, rule := range s.rules {
+	for _, rule := range s.rulesRepository.Rules() {
 		tokens := filterEntryRegex.FindStringSubmatch(rule.FilterExpression)
 		if tokens == nil || len(tokens) != 4 {
 			level.Error(s.l).Log("err", "invalid filter expression", "expression", rule.FilterExpression)

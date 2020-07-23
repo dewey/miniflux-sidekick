@@ -15,20 +15,17 @@ func TestEvaluateRules(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		service mockService
+		rules []rules.Rule
 		args   *miniflux.Entry
 		want   bool
 	}{
 		{
 			name: "Entry contains string",
-			service: mockService{
-				l:      log.NewNopLogger(),
-				rules: []rules.Rule{
-					{
-						Command: "ignore-article",
-						URL: "http://example.com/feed.xml",
-						FilterExpression: "title # Moon",
-					},
+			rules: []rules.Rule{
+				{
+					Command: "ignore-article",
+					URL: "http://example.com/feed.xml",
+					FilterExpression: "title # Moon",
 				},
 			},
 			args: &miniflux.Entry{
@@ -38,14 +35,11 @@ func TestEvaluateRules(t *testing.T) {
 		},
 		{
 			name: "Entry contains string",
-			service: mockService{
-				l:      log.NewNopLogger(),
-				rules: []rules.Rule{
-					{
-						Command: "ignore-article",
-						URL: "http://example.com/feed.xml",
-						FilterExpression: "title # Moon",
-					},
+			rules: []rules.Rule{
+				{
+					Command: "ignore-article",
+					URL: "http://example.com/feed.xml",
+					FilterExpression: "title # Moon",
 				},
 			},
 			args: &miniflux.Entry{
@@ -55,14 +49,11 @@ func TestEvaluateRules(t *testing.T) {
 		},
 		{
 			name: "Entry contains string, matched with Regexp",
-			service: mockService{
-				l:      log.NewNopLogger(),
-				rules: []rules.Rule{
-					{
-						Command: "ignore-article",
-						URL: "http://example.com/feed.xml",
-						FilterExpression: "title =~ [Sponsor]",
-					},
+			rules: []rules.Rule{
+				{
+					Command: "ignore-article",
+					URL: "http://example.com/feed.xml",
+					FilterExpression: "title =~ [Sponsor]",
 				},
 			},
 			args: &miniflux.Entry{
@@ -72,14 +63,11 @@ func TestEvaluateRules(t *testing.T) {
 		},
 		{
 			name: "Entry doesn't string, matched with Regexp",
-			service: mockService{
-				l:      log.NewNopLogger(),
-				rules: []rules.Rule{
-					{
-						Command: "ignore-article",
-						URL: "http://example.com/feed.xml",
-						FilterExpression: `title =~ \[Sponsor\]`,
-					},
+			rules: []rules.Rule{
+				{
+					Command: "ignore-article",
+					URL: "http://example.com/feed.xml",
+					FilterExpression: `title =~ \[Sponsor\]`,
 				},
 			},
 			args: &miniflux.Entry{
@@ -89,14 +77,11 @@ func TestEvaluateRules(t *testing.T) {
 		},
 		{
 			name: "Entry doesn't string, matched with Regexp, ignore case",
-			service: mockService{
-				l:      log.NewNopLogger(),
-				rules: []rules.Rule{
-					{
-						Command: "ignore-article",
-						URL: "http://example.com/feed.xml",
-						FilterExpression: "title =~ (?i)(Podcast|scooter)",
-					},
+			rules: []rules.Rule{
+				{
+					Command: "ignore-article",
+					URL: "http://example.com/feed.xml",
+					FilterExpression: "title =~ (?i)(Podcast|scooter)",
 				},
 			},
 			args: &miniflux.Entry{
@@ -106,14 +91,11 @@ func TestEvaluateRules(t *testing.T) {
 		},
 		{
 			name: "Entry doesn't string, matched with Regexp, ignore case",
-			service: mockService{
-				l:      log.NewNopLogger(),
-				rules: []rules.Rule{
-					{
-						Command: "ignore-article",
-						URL: "http://example.com/feed.xml",
-						FilterExpression: "title =~ (?i)(Podcast|scooter)",
-					},
+			rules: []rules.Rule{
+				{
+					Command: "ignore-article",
+					URL: "http://example.com/feed.xml",
+					FilterExpression: "title =~ (?i)(Podcast|scooter)",
 				},
 			},
 			args: &miniflux.Entry{
@@ -123,14 +105,11 @@ func TestEvaluateRules(t *testing.T) {
 		},
 		{
 			name: "Entry doesn't string, matched with Regexp, respect case",
-			service: mockService{
-				l:      log.NewNopLogger(),
-				rules: []rules.Rule{
-					{
-						Command: "ignore-article",
-						URL: "http://example.com/feed.xml",
-						FilterExpression: "title =~ (Podcast)",
-					},
+			rules: []rules.Rule{
+				{
+					Command: "ignore-article",
+					URL: "http://example.com/feed.xml",
+					FilterExpression: "title =~ (Podcast)",
 				},
 			},
 			args: &miniflux.Entry{
@@ -141,10 +120,15 @@ func TestEvaluateRules(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := service{
-				rules:  tt.service.rules,
-				l:      tt.service.l,
+			localMockRepository, err := rules.NewLocalRepository()
+			if err != nil {
+				t.Fatal(err)
 			}
+
+			s := service{
+				rulesRepository:  localMockRepository,
+			}
+			s.rulesRepository.SetCachedRules(tt.rules)
 			if got := s.evaluateRules(tt.args); got != tt.want {
 				t.Errorf("evaluateRules() = %v, want %v", got, tt.want)
 			}

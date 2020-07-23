@@ -10,8 +10,17 @@ var (
 
 // Repository defines the interface for the rules repository
 type Repository interface {
-	// Rules fetches the list of rules from a file or remote location
-	Rules(location string) ([]Rule, error)
+	// FetchRules fetches the list of rules from a file or remote location
+	FetchRules(location string) ([]Rule, error)
+
+	// RefreshRules refreshes the in-memory cached rules
+	RefreshRules(location string) error
+
+	// SetCachedRules([]Rule)
+	SetCachedRules(rules []Rule)
+
+	// Rules returns rules from cache
+	Rules() []Rule
 }
 
 // Rule contains a killfile rule. There's no official standard so we implement these rules https://newsboat.org/releases/2.15/docs/newsboat.html#_killfiles
