@@ -9,5 +9,5 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/peterbourgon/ff v1.6.0
 	github.com/robfig/cron/v3 v3.0.0
-	miniflux.app v0.0.0-20200401025025-454eb590cef6
+	miniflux.app v0.0.0-20200718020908-1b5f217e9c4e
 )
