@@ -72,52 +72,7 @@ func (s *service) RunFilterJob(simulation bool) {
 		// We then check if the entry title matches a rule, if it matches we set it to "read" so we don't see it any more
 		var matchedEntries []int64
 		for _, entry := range entries.Entries {
-			var shouldKill bool
-			for _, rule := range s.rules {
-				tokens := filterEntryRegex.FindStringSubmatch(rule.FilterExpression)
-				if tokens == nil || len(tokens) != 4 {
-					level.Error(s.l).Log("err", "invalid filter expression", "expression", rule.FilterExpression)
-					continue
-				}
-				// We set the string we want to compare against (https://newsboat.org/releases/2.15/docs/newsboat.html#_filter_language are supported in the killfile format)
-				var entryTarget string
-				switch tokens[1] {
-				case "title":
-					entryTarget = entry.Title
-				case "description":
-					entryTarget = entry.Content
-				}
-
-				// We check what kind of comparator was given
-				switch tokens[2] {
-				case "=~", "!~":
-					invertFilter := tokens[2][0] == '!'
-
-					matched, err := regexp.MatchString(tokens[3], entryTarget)
-					if err != nil {
-						level.Error(s.l).Log("err", err)
-					}
-
-					if matched && !invertFilter || !matched && invertFilter {
-						shouldKill = true
-					}
-				case "#", "!#":
-					invertFilter := tokens[2][0] == '!'
-
-					var containsTerm bool
-					blacklistTokens := strings.Split(tokens[3], ",")
-					for _, t := range blacklistTokens {
-						if strings.Contains(entryTarget, t) {
-							containsTerm = true
-							break
-						}
-					}
-					if containsTerm && !invertFilter || !containsTerm && invertFilter {
-						shouldKill = true
-					}
-				}
-			}
-			if shouldKill {
+			if s.evaluateRules(entry) {
 				level.Info(s.l).Log("msg", "entry matches rules in the killfile", "entry_id", entry.ID, "feed_id", feed.ID)
 				matchedEntries = append(matchedEntries, entry.ID)
 			}
@@ -144,4 +99,54 @@ func (s *service) RunFilterJob(simulation bool) {
 			level.Info(s.l).Log("msg", "marked all matched feed items as read", "affected", len(matchedEntries))
 		}
 	}
+}
+
+// evaluateRules checks a feed items against the available rules. It returns wheater this entry should be killed or not.
+func (s service) evaluateRules(entry *miniflux.Entry) bool {
+	var shouldKill bool
+	for _, rule := range s.rules {
+		tokens := filterEntryRegex.FindStringSubmatch(rule.FilterExpression)
+		if tokens == nil || len(tokens) != 4 {
+			level.Error(s.l).Log("err", "invalid filter expression", "expression", rule.FilterExpression)
+			continue
+		}
+		// We set the string we want to compare against (https://newsboat.org/releases/2.15/docs/newsboat.html#_filter_language are supported in the killfile format)
+		var entryTarget string
+		switch tokens[1] {
+		case "title":
+			entryTarget = entry.Title
+		case "description":
+			entryTarget = entry.Content
+		}
+
+		// We check what kind of comparator was given
+		switch tokens[2] {
+		case "=~", "!~":
+			invertFilter := tokens[2][0] == '!'
+
+			matched, err := regexp.MatchString(tokens[3], entryTarget)
+			if err != nil {
+				level.Error(s.l).Log("err", err)
+			}
+
+			if matched && !invertFilter || !matched && invertFilter {
+				shouldKill = true
+			}
+		case "#", "!#":
+			invertFilter := tokens[2][0] == '!'
+
+			var containsTerm bool
+			blacklistTokens := strings.Split(tokens[3], ",")
+			for _, t := range blacklistTokens {
+				if strings.Contains(entryTarget, t) {
+					containsTerm = true
+					break
+				}
+			}
+			if containsTerm && !invertFilter || !containsTerm && invertFilter {
+				shouldKill = true
+			}
+		}
+	}
+	return shouldKill
 }

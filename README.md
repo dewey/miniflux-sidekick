@@ -50,6 +50,9 @@ ignore-article "https://www.example.com" "title =~ \[Sponsor\]"
 ignore-article "https://xkcd.com/atom.xml" "title # Lunar,Moon"
 ```
 
+### Testing rules
+
+There are tests in `filter/` that can be used to easily test rules or add new comparison operators.
 
 ## Deploy
 
