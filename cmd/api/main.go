@@ -24,16 +24,17 @@ import (
 func main() {
 	fs := flag.NewFlagSet("mf", flag.ExitOnError)
 	var (
-		environment         = fs.String("environment", "develop", "the environment we are running in")
-		minifluxUsername    = fs.String("username", "", "the username used to log into miniflux")
-		minifluxPassword    = fs.String("password", "", "the password used to log into miniflux")
-		minifluxAPIKey      = fs.String("api-key", "", "api key used for authentication")
-		minifluxAPIEndpoint = fs.String("api-endpoint", "https://rss.notmyhostna.me", "the api of your miniflux instance")
-		killfilePath        = fs.String("killfile-path", "", "the path to the local killfile")
-		killfileURL         = fs.String("killfile-url", "", "the url to the remote killfile eg. Github gist")
-		refreshInterval     = fs.String("refresh-interval", "", "the url to the remote killfile eg. Github gist")
-		port                = fs.String("port", "8080", "the port the miniflux sidekick is running on")
-		logLevel            = fs.String("log-level", "", "the level to filter logs at eg. debug, info, warn, error")
+		environment          = fs.String("environment", "develop", "the environment we are running in")
+		minifluxUsername     = fs.String("username", "", "the username used to log into miniflux")
+		minifluxPassword     = fs.String("password", "", "the password used to log into miniflux")
+		minifluxAPIKey       = fs.String("api-key", "", "api key used for authentication")
+		minifluxAPIEndpoint  = fs.String("api-endpoint", "https://rss.notmyhostna.me", "the api of your miniflux instance")
+		killfilePath         = fs.String("killfile-path", "", "the path to the local killfile")
+		killfileURL          = fs.String("killfile-url", "", "the url to the remote killfile eg. Github gist")
+		killfileRefreshHours = fs.Int("killfile-refresh-hours", 1, "how often the rules should be updated from local or remote config (in hours)")
+		refreshInterval      = fs.String("refresh-interval", "", "interval defining how often we check for new entries in miniflux")
+		port                 = fs.String("port", "8080", "the port the miniflux sidekick is running on")
+		logLevel             = fs.String("log-level", "", "the level to filter logs at eg. debug, info, warn, error")
 	)
 
 	ff.Parse(fs, os.Args[1:],
@@ -94,7 +95,7 @@ func main() {
 	}
 
 	// We parse our rules from disk or from an provided endpoint
-	var rs []rules.Rule
+	var rr rules.Repository
 	if *killfilePath != "" {
 		level.Info(l).Log("msg", "using a local killfile", "path", *killfilePath)
 		localRepo, err := rules.NewLocalRepository()
@@ -102,12 +103,13 @@ func main() {
 			level.Error(l).Log("err", err)
 			return
 		}
-		parsedRules, err := localRepo.Rules(*killfilePath)
+		parsedRules, err := localRepo.FetchRules(*killfilePath)
 		if err != nil {
 			level.Error(l).Log("err", err)
 			return
 		}
-		rs = parsedRules
+		localRepo.SetCachedRules(parsedRules)
+		rr = localRepo
 	}
 	// A local rule set always trumps a remote one
 	if *killfileURL != "" && *killfilePath == "" {
@@ -117,15 +119,36 @@ func main() {
 			level.Error(l).Log("err", err)
 			return
 		}
-		parsedRules, err := githubRepo.Rules(*killfileURL)
+		parsedRules, err := githubRepo.FetchRules(*killfileURL)
 		if err != nil {
 			level.Error(l).Log("err", err)
 			return
 		}
-		rs = parsedRules
+		// Fill cache when fetched first
+		githubRepo.SetCachedRules(parsedRules)
+		rr = githubRepo
+
+		if *killfileRefreshHours != 0 {
+			dur, err := time.ParseDuration(fmt.Sprintf("%dh", *killfileRefreshHours))
+			if err != nil {
+				level.Error(l).Log("err", err)
+				return
+			}
+			ticker := time.NewTicker(dur)
+			go func() {
+				for {
+					select {
+					case <-ticker.C:
+						if err := githubRepo.RefreshRules(*killfileURL); err != nil {
+							level.Error(l).Log("err", err)
+						}
+					}
+				}
+			}()
+		}
 	}
 
-	filterService := filter.NewService(l, client, rs)
+	filterService := filter.NewService(l, client, rr)
 
 	cron := cron.New()
 	// Set a fallback, documented in README
@@ -179,7 +202,7 @@ func main() {
 	}
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, rs)
+		tmpl.Execute(w, rr.Rules())
 	})
 
 	level.Info(l).Log("msg", fmt.Sprintf("miniflux-sidekick api is running on :%s", *port), "environment", *environment)

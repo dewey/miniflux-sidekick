@@ -11,4 +11,5 @@ services:
       - MF_PASSWORD="changeme"
       - MF_API_ENDPOINT=https://rss.notmyhostna.me
       - MF_KILLFILE_URL=https://raw.githubusercontent.com/dewey/miniflux-sidekick/master/killfile
+      - MF_KILLFILE_REFRESH_HOURS=5
       - MF_REFRESH_INTERVAL=*/5 * * * *

@@ -3,9 +3,12 @@ package rules
 import (
 	"bufio"
 	"os"
+	"sync"
 )
 
 type localRepository struct {
+	mutex       sync.RWMutex
+	cachedRules []Rule
 }
 
 // NewLocalRepository returns a newly initialized rules repository
@@ -13,8 +16,16 @@ func NewLocalRepository() (Repository, error) {
 	return &localRepository{}, nil
 }
 
-// Rules parses a local killfile to get all rules
-func (r *localRepository) Rules(location string) ([]Rule, error) {
+func (r *localRepository) Rules() []Rule {
+	if r.cachedRules != nil {
+		return r.cachedRules
+	} else {
+		return []Rule{}
+	}
+}
+
+// FetchRules parses a local killfile to get all rules
+func (r *localRepository) FetchRules(location string) ([]Rule, error) {
 	file, err := os.Open(location)
 	if err != nil {
 		return nil, err
@@ -34,4 +45,16 @@ func (r *localRepository) Rules(location string) ([]Rule, error) {
 		}
 	}
 	return rules, scanner.Err()
+}
+
+// RefreshRules for local repositories isn't implemented yet.
+func (r *localRepository) RefreshRules(location string) error {
+	return nil
+}
+
+// SetCachedRules sets the in-memory cache
+func (r *localRepository) SetCachedRules(rules []Rule) {
+	r.mutex.Lock()
+	r.cachedRules = rules
+	r.mutex.Unlock()
 }
