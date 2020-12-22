@@ -79,3 +79,7 @@ export MF_KILLFILE_REFRESH_HOURS=2
 ```
 
 There's also a Dockerfile and Docker Compose file included so you can easily run it via `docker-compose -f docker-compose.yml up -d`.
+
+## See Also
+
+Miniflux v2.0.25 added built-in support for [filtering rules](https://miniflux.app/docs/rules.html#filtering-rules).
