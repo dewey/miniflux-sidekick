@@ -1,7 +1,7 @@
 version: "3"
 services:
   app:
-    image: docker.pkg.github.com/dewey/miniflux-sidekick/dewey-miniflux-sidekick:latest
+    image: ghcr.io/dewey/miniflux-sidekick/dewey-miniflux-sidekick:latest
     ports:
       - "8080:8080"
     environment:
