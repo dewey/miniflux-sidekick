@@ -105,46 +105,50 @@ func (s *service) RunFilterJob(simulation bool) {
 func (s service) evaluateRules(entry *miniflux.Entry) bool {
 	var shouldKill bool
 	for _, rule := range s.rulesRepository.Rules() {
-		tokens := filterEntryRegex.FindStringSubmatch(rule.FilterExpression)
-		if tokens == nil || len(tokens) != 4 {
-			level.Error(s.l).Log("err", "invalid filter expression", "expression", rule.FilterExpression)
-			continue
-		}
-		// We set the string we want to compare against (https://newsboat.org/releases/2.15/docs/newsboat.html#_filter_language are supported in the killfile format)
-		var entryTarget string
-		switch tokens[1] {
-		case "title":
-			entryTarget = entry.Title
-		case "description":
-			entryTarget = entry.Content
-		}
-
-		// We check what kind of comparator was given
-		switch tokens[2] {
-		case "=~", "!~":
-			invertFilter := tokens[2][0] == '!'
-
-			matched, err := regexp.MatchString(tokens[3], entryTarget)
-			if err != nil {
-				level.Error(s.l).Log("err", err)
+		// Only apply rule if the rule URL matches the feed URL of the entry
+		if rule.URL == "*" || strings.Contains(entry.Feed.FeedURL, rule.URL) {
+			level.Info(s.l).Log("msg", "rule URL matches feed URL", "match", rule.URL)
+			tokens := filterEntryRegex.FindStringSubmatch(rule.FilterExpression)
+			if tokens == nil || len(tokens) != 4 {
+				level.Error(s.l).Log("err", "invalid filter expression", "expression", rule.FilterExpression)
+				continue
 			}
-
-			if matched && !invertFilter || !matched && invertFilter {
-				shouldKill = true
+			// We set the string we want to compare against (https://newsboat.org/releases/2.15/docs/newsboat.html#_filter_language are supported in the killfile format)
+			var entryTarget string
+			switch tokens[1] {
+			case "title":
+				entryTarget = entry.Title
+			case "description":
+				entryTarget = entry.Content
 			}
-		case "#", "!#":
-			invertFilter := tokens[2][0] == '!'
-
-			var containsTerm bool
-			blacklistTokens := strings.Split(tokens[3], ",")
-			for _, t := range blacklistTokens {
-				if strings.Contains(entryTarget, t) {
-					containsTerm = true
-					break
+	
+			// We check what kind of comparator was given
+			switch tokens[2] {
+			case "=~", "!~":
+				invertFilter := tokens[2][0] == '!'
+	
+				matched, err := regexp.MatchString(tokens[3], entryTarget)
+				if err != nil {
+					level.Error(s.l).Log("err", err)
 				}
-			}
-			if containsTerm && !invertFilter || !containsTerm && invertFilter {
-				shouldKill = true
+	
+				if matched && !invertFilter || !matched && invertFilter {
+					shouldKill = true
+				}
+			case "#", "!#":
+				invertFilter := tokens[2][0] == '!'
+	
+				var containsTerm bool
+				blacklistTokens := strings.Split(tokens[3], ",")
+				for _, t := range blacklistTokens {
+					if strings.Contains(entryTarget, t) {
+						containsTerm = true
+						break
+					}
+				}
+				if containsTerm && !invertFilter || !containsTerm && invertFilter {
+					shouldKill = true
+				}
 			}
 		}
 	}
