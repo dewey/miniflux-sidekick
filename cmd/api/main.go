@@ -103,7 +103,7 @@ func main() {
 			level.Error(l).Log("err", err)
 			return
 		}
-		parsedRules, err := localRepo.FetchRules(*killfilePath)
+		parsedRules, err := localRepo.FetchRules(*killfilePath, l)
 		if err != nil {
 			level.Error(l).Log("err", err)
 			return
@@ -119,7 +119,7 @@ func main() {
 			level.Error(l).Log("err", err)
 			return
 		}
-		parsedRules, err := githubRepo.FetchRules(*killfileURL)
+		parsedRules, err := githubRepo.FetchRules(*killfileURL, l)
 		if err != nil {
 			level.Error(l).Log("err", err)
 			return
@@ -139,7 +139,7 @@ func main() {
 				for {
 					select {
 					case <-ticker.C:
-						if err := githubRepo.RefreshRules(*killfileURL); err != nil {
+						if err := githubRepo.RefreshRules(*killfileURL, l); err != nil {
 							level.Error(l).Log("err", err)
 						}
 					}

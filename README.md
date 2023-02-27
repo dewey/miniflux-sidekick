@@ -22,6 +22,8 @@ ignore-article "<feed>" "<filterexpr>"
 
 This contains the URL of the feed that should be matched. It fuzzy matches the URL so if you only have one feed just use the base URL of the site. Example: `https://example.com` if the feed is on `https://example.com/rss/atom.xml`. A wildcard selector of `*` is also supported instead of the URL.
 
+Alternately, you may specify a comma-separated list of categories whose feeds should be matched by starting the value with `category:`. Example: `category:Photos`.
+
 ### `<filterexpr>` Filter Expressions
 
 From the [available rule set](https://newsboat.org/releases/2.15/docs/newsboat.html#_filter_language) and attributes (`Table 5. Available Attributes`) only a small subset are supported right now. These should cover most use cases already though.
@@ -30,6 +32,7 @@ From the [available rule set](https://newsboat.org/releases/2.15/docs/newsboat.h
 
 - `title`
 - `content`
+- `author`
 
 **Comparison Operators**
 
@@ -59,6 +62,12 @@ This one filters out all feed items that have the word `lunar` OR `moon` in ther
 ignore-article "https://xkcd.com/atom.xml" "title =~ (?i)(lunAR|MOON)"
 ```
 
+This one marks read all feed items without an image in feeds assigned a category of `Photos`.
+```
+ignore-article "category:Photos" "content !~ (?i)(img src=)"
+
+```
+
 ### Testing rules
 
 There are tests in `filter/` that can be used to easily test rules or add new comparison operators.
@@ -66,6 +75,8 @@ There are tests in `filter/` that can be used to easily test rules or add new co
 ## Deploy
 
 There are the environment variables that can be set. If you want to use a local file you can set `MF_KILLFILE_PATH="~/path/to/killfile"`. A local killfile always overwrites a remote one, even if the remote killfile URL is set (`MF_KILLFILE_URL`). `MF_USERNAME`, `MF_PASSWORD` and `MF_API_ENDPOINT` are your Miniflux credentials. If `MF_REFRESH_INTERVAL` isn't set it's running on every 30 minutes of every hour (`0 30 * * * *`).
+
+Note that `MF_KILLFILE_REFRESH_HOURS` is currently only supported for remote killfiles. You'll need to restart miniflux-sidekick to get it to recognize an updated local killfile.
 
 ```
 export MF_ENVIRONMENT=development
