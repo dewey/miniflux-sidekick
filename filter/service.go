@@ -61,7 +61,7 @@ func (s *service) RunFilterJob(simulation bool) {
 				found = true
 			}
 			// Alt: Instead of a URL, specify "category:" followed by a comma-separated list of Miniflux categories to add a rule that affects every feed in those categories.
-			if strings.EqualFold(rule.URL[0:9], "category:") {
+			if strings.HasPrefix(strings.ToLower(rule.URL), "category:") {
 				categoryTokens := strings.Split(rule.URL[9:], ",")
 				for _, ct := range categoryTokens {
 					if strings.EqualFold(feed.Category.Title, strings.TrimSpace(ct)) {
