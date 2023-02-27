@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"os"
 	"sync"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 )
 
 type localRepository struct {
@@ -25,7 +28,7 @@ func (r *localRepository) Rules() []Rule {
 }
 
 // FetchRules parses a local killfile to get all rules
-func (r *localRepository) FetchRules(location string) ([]Rule, error) {
+func (r *localRepository) FetchRules(location string, l log.Logger) ([]Rule, error) {
 	file, err := os.Open(location)
 	if err != nil {
 		return nil, err
@@ -37,18 +40,24 @@ func (r *localRepository) FetchRules(location string) ([]Rule, error) {
 	for scanner.Scan() {
 		matches := reRuleSplitter.FindStringSubmatch(scanner.Text())
 		if len(matches) == 4 {
-			rules = append(rules, Rule{
-				Command:          matches[1],
-				URL:              matches[2],
-				FilterExpression: matches[3],
-			})
+			// Verify that matches[3] (soon to be FilterExpression) is legit before we save the rule
+			tokens := filterEntryRegex.FindStringSubmatch(matches[3])
+			if tokens == nil || len(tokens) != 4 {
+				level.Error(l).Log("err", "invalid filter expression", "expression", matches[3])
+			} else {
+				rules = append(rules, Rule{
+					Command:          matches[1],
+					URL:              matches[2],
+					FilterExpression: matches[3],
+				})
+			}
 		}
 	}
 	return rules, scanner.Err()
 }
 
 // RefreshRules for local repositories isn't implemented yet.
-func (r *localRepository) RefreshRules(location string) error {
+func (r *localRepository) RefreshRules(location string, l log.Logger) error {
 	return nil
 }
 

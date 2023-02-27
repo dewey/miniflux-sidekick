@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"net/http"
 	"sync"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 )
 
 type githubRepository struct {
@@ -28,7 +31,7 @@ func (r *githubRepository) Rules() []Rule {
 }
 
 // FetchRules parses a remote killfile to get all rules
-func (r *githubRepository) FetchRules(location string) ([]Rule, error) {
+func (r *githubRepository) FetchRules(location string, l log.Logger) ([]Rule, error) {
 	resp, err := r.c.Get(location)
 	if err != nil {
 		return nil, err
@@ -39,11 +42,17 @@ func (r *githubRepository) FetchRules(location string) ([]Rule, error) {
 	for scanner.Scan() {
 		matches := reRuleSplitter.FindStringSubmatch(scanner.Text())
 		if len(matches) == 4 {
-			rules = append(rules, Rule{
-				Command:          matches[1],
-				URL:              matches[2],
-				FilterExpression: matches[3],
-			})
+			// Verify that matches[3] (soon to be FilterExpression) is legit before we save the rule
+			tokens := filterEntryRegex.FindStringSubmatch(matches[3])
+			if tokens == nil || len(tokens) != 4 {
+				level.Error(l).Log("err", "invalid filter expression", "expression", matches[3])
+			} else {
+				rules = append(rules, Rule{
+					Command:          matches[1],
+					URL:              matches[2],
+					FilterExpression: matches[3],
+				})
+			}
 		}
 	}
 
@@ -51,8 +60,8 @@ func (r *githubRepository) FetchRules(location string) ([]Rule, error) {
 }
 
 // RefreshRules fetches the new rules and updates the local cache
-func (r *githubRepository) RefreshRules(location string) error {
-	rules, err := r.FetchRules(location)
+func (r *githubRepository) RefreshRules(location string, l log.Logger) error {
+	rules, err := r.FetchRules(location, l)
 	if err != nil {
 		return err
 	}
